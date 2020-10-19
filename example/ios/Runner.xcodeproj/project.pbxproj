@@ -174,8 +174,8 @@
 				TargetAttributes = {
 					97C146ED1CF9000F007C117D = {
 						CreatedOnToolsVersion = 7.3.1;
-						DevelopmentTeam = PWSQ8TH82A;
-						ProvisioningStyle = Manual;
+						DevelopmentTeam = 2K6X2XEF3Z;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -409,7 +409,9 @@
 			buildSettings = {
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				DEVELOPMENT_TEAM = PWSQ8TH82A;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 2K6X2XEF3Z;
 				ENABLE_BITCODE = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -421,10 +423,10 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/Flutter",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.it-nomads.flutterSecureStorageExample";
+				PRODUCT_BUNDLE_IDENTIFIER = "de.bmw.flutter-secure-storage";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE = "5c1d3b2d-5885-4962-b917-47213391361a";
-				PROVISIONING_PROFILE_SPECIFIER = "App Wildcard";
+				PROVISIONING_PROFILE = "";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Debug;
 		};
@@ -448,6 +450,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.it-nomads.flutterSecureStorageExample";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
 			name = Release;

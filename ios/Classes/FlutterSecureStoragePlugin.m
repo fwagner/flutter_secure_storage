@@ -13,6 +13,7 @@ static NSString *const InvalidParameters = @"Invalid parameter's type";
 
 @implementation FlutterSecureStoragePlugin
 
+
 - (instancetype)init {
     self = [super init];
     if (self){
@@ -36,45 +37,50 @@ static NSString *const InvalidParameters = @"Invalid parameter's type";
     NSDictionary *arguments = [call arguments];
     NSDictionary *options = [arguments[@"options"] isKindOfClass:[NSDictionary class]] ? arguments[@"options"] : nil;
 
-    if ([@"read" isEqualToString:call.method]) {
-        NSString *key = arguments[@"key"];
-        NSString *groupId = options[@"groupId"];
-        NSString *value = [self read:key forGroup:groupId];
-        
-        result(value);
-    } else
-    if ([@"write" isEqualToString:call.method]) {
-        NSString *key = arguments[@"key"];
-        NSString *value = arguments[@"value"];
-        NSString *groupId = options[@"groupId"];
-        NSString *accessibility = options[@"accessibility"];        
-        if (![value isKindOfClass:[NSString class]]){
-            result(InvalidParameters);
-            return;
-        }
-        
-        [self write:value forKey:key forGroup:groupId accessibilityAttr:accessibility];
-        
-        result(nil);
-    } else if ([@"delete" isEqualToString:call.method]) {
-        NSString *key = arguments[@"key"];
-        NSString *groupId = options[@"groupId"];
-        [self delete:key forGroup:groupId];
-        
-        result(nil);
-    } else if ([@"deleteAll" isEqualToString:call.method]) {
-        NSString *groupId = options[@"groupId"];
-        [self deleteAll: groupId];
-        
-        result(nil);
-    } else if ([@"readAll" isEqualToString:call.method]) {
-        NSString *groupId = options[@"groupId"];
-        NSDictionary *value = [self readAll: groupId];
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        id returnValue = nil;
+        if ([@"read" isEqualToString:call.method]) {
+            NSString *key = arguments[@"key"];
+            NSString *groupId = options[@"groupId"];
+            NSString *value = [self read:key forGroup:groupId];
 
-        result(value);
-    }else {
-        result(FlutterMethodNotImplemented);
-    }
+            returnValue = value;
+        } else if ([@"write" isEqualToString:call.method]) {
+            NSString *key = arguments[@"key"];
+            NSString *value = arguments[@"value"];
+            NSString *groupId = options[@"groupId"];
+            NSString *accessibility = options[@"accessibility"];
+            if (![value isKindOfClass:[NSString class]]){
+                result(InvalidParameters);
+                return;
+            }
+
+            [self write:value forKey:key forGroup:groupId accessibilityAttr:accessibility];
+
+            returnValue = nil;
+        } else if ([@"delete" isEqualToString:call.method]) {
+            NSString *key = arguments[@"key"];
+            NSString *groupId = options[@"groupId"];
+            [self delete:key forGroup:groupId];
+
+            returnValue = nil;
+        } else if ([@"deleteAll" isEqualToString:call.method]) {
+            NSString *groupId = options[@"groupId"];
+            [self deleteAll: groupId];
+
+            returnValue = nil;
+        } else if ([@"readAll" isEqualToString:call.method]) {
+            NSString *groupId = options[@"groupId"];
+            NSDictionary *value = [self readAll: groupId];
+
+            returnValue = value;
+        } else {
+            returnValue = FlutterMethodNotImplemented;
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            result(returnValue);
+        });
+    });
 }
 
 - (void)write:(NSString *)value forKey:(NSString *)key forGroup:(NSString *)groupId accessibilityAttr:(NSString *)accessibility {
@@ -82,10 +88,10 @@ static NSString *const InvalidParameters = @"Invalid parameter's type";
     if(groupId != nil) {
         search[(__bridge id)kSecAttrAccessGroup] = groupId;
     }
-    
+
     search[(__bridge id)kSecAttrAccount] = key;
     search[(__bridge id)kSecMatchLimit] = (__bridge id)kSecMatchLimitOne;
-    
+
     // The default setting is kSecAttrAccessibleWhenUnlocked
     CFStringRef attrAccessible = kSecAttrAccessibleWhenUnlocked;
     if (accessibility != nil) {
@@ -101,17 +107,17 @@ static NSString *const InvalidParameters = @"Invalid parameter's type";
             attrAccessible = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly;
         }
     }
-    
+
     OSStatus status;
     status = SecItemCopyMatching((__bridge CFDictionaryRef)search, NULL);
     if (status == noErr){
         search[(__bridge id)kSecMatchLimit] = nil;
-        
+
         NSDictionary *update = @{
             (__bridge id)kSecValueData: [value dataUsingEncoding:NSUTF8StringEncoding],
             (__bridge id)kSecAttrAccessible: (__bridge id) attrAccessible,
         };
-        
+
         status = SecItemUpdate((__bridge CFDictionaryRef)search, (__bridge CFDictionaryRef)update);
         if (status != noErr){
             NSLog(@"SecItemUpdate status = %d", (int) status);
@@ -120,7 +126,7 @@ static NSString *const InvalidParameters = @"Invalid parameter's type";
         search[(__bridge id)kSecValueData] = [value dataUsingEncoding:NSUTF8StringEncoding];
         search[(__bridge id)kSecMatchLimit] = nil;
         search[(__bridge id)kSecAttrAccessible] = (__bridge id) attrAccessible;
-               
+
         status = SecItemAdd((__bridge CFDictionaryRef)search, NULL);
         if (status != noErr){
             NSLog(@"SecItemAdd status = %d", (int) status);
@@ -135,9 +141,9 @@ static NSString *const InvalidParameters = @"Invalid parameter's type";
     }
     search[(__bridge id)kSecAttrAccount] = key;
     search[(__bridge id)kSecReturnData] = (__bridge id)kCFBooleanTrue;
-    
+
     CFDataRef resultData = NULL;
-    
+
     OSStatus status;
     status = SecItemCopyMatching((__bridge CFDictionaryRef)search, (CFTypeRef*)&resultData);
     NSString *value;
@@ -145,7 +151,7 @@ static NSString *const InvalidParameters = @"Invalid parameter's type";
         NSData *data = (__bridge NSData*)resultData;
         value = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     }
-    
+
     return value;
 }
 
@@ -156,7 +162,7 @@ static NSString *const InvalidParameters = @"Invalid parameter's type";
     }
     search[(__bridge id)kSecAttrAccount] = key;
     search[(__bridge id)kSecReturnData] = (__bridge id)kCFBooleanTrue;
-    
+
     SecItemDelete((__bridge CFDictionaryRef)search);
 }
 
@@ -173,19 +179,19 @@ static NSString *const InvalidParameters = @"Invalid parameter's type";
     if(groupId != nil) {
         search[(__bridge id)kSecAttrAccessGroup] = groupId;
     }
-    
+
     search[(__bridge id)kSecReturnData] = (__bridge id)kCFBooleanTrue;
 
     search[(__bridge id)kSecMatchLimit] = (__bridge id)kSecMatchLimitAll;
     search[(__bridge id)kSecReturnAttributes] = (__bridge id)kCFBooleanTrue;
 
     CFArrayRef resultData = NULL;
-    
+
     OSStatus status;
     status = SecItemCopyMatching((__bridge CFDictionaryRef)search, (CFTypeRef*)&resultData);
     if (status == noErr){
         NSArray *items = (__bridge NSArray*)resultData;
-        
+
         NSMutableDictionary *results = [[NSMutableDictionary alloc] init];
         for (NSDictionary *item in items){
             NSString *key = item[(__bridge NSString *)kSecAttrAccount];
@@ -194,7 +200,7 @@ static NSString *const InvalidParameters = @"Invalid parameter's type";
         }
         return [results copy];
     }
-    
+
     return @{};
 }
 
